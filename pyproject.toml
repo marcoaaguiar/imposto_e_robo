@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "imposto_e_robo"
+version = "0.1.0"
+description = "Sistema que analisa as notas de corretagem e diz como preecencher a declaração do imposto de renda"
+authors = ["Marco Aguiar <marcoaaguiar@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+PyMuPDF = "^1.18.8"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+black = "^20.8b1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

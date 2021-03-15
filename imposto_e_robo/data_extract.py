@@ -71,8 +71,11 @@ def parse_transaction_match(match: Match[str]) -> Transaction:
     total = Decimal(br_to_us_number_format(match_dict.pop("total")))
 
     match_dict["stock"] = re.sub(r"\s+", " ", match_dict["stock"])
-    match_dict["amount"] = Decimal(br_to_us_number_format(match_dict["amount"]))
+    match_dict["amount"] = int(br_to_us_number_format(match_dict["amount"]))
     match_dict["price"] = Decimal(br_to_us_number_format(match_dict["price"]))
+
+    # TODO: fix regex
+    match_dict["obs"] = match_dict["obs"].strip()
 
     trans = Transaction(**match_dict)
     assert trans.total == total, "Total extraído não bate com o da nota"

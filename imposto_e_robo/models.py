@@ -1,5 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
+from typing import Optional
 
 
 @dataclass
@@ -16,6 +17,12 @@ class Transaction:
     @property
     def total(self) -> Decimal:
         return self.amount * self.price
+
+    @property
+    def parsed_amount(self) -> int:
+        if self.buy_or_sell == "C":
+            return self.amount
+        return -self.amount
 
 
 @dataclass
@@ -34,6 +41,8 @@ class BrokerageReceipt:
     taxes: Decimal
     irrf_wo_operation: Decimal
     others: Decimal
+
+    # TODO: pegar data
 
     @property
     def total_cblc(self) -> Decimal:
@@ -61,3 +70,45 @@ class BrokerageReceipt:
     @property
     def total(self) -> Decimal:
         return self.net_value_for_date
+
+
+@dataclass
+class Realization:
+    stock: str
+    amount: int
+    average_price: Decimal
+    #  date: datetime
+
+    @property
+    def total(self) -> Decimal:
+        return self.amount * self.average_price
+
+
+@dataclass
+class PortfolioEntry:
+    stock: str
+    amount: int = 0
+    average_price: Decimal = Decimal(0)
+
+    def process_transaction(self, transaction: Transaction) -> Optional[Realization]:
+        if self.stock != transaction.stock:
+            raise ValueError(
+                f"Transaction.stock and PortfolioEntry.stock are not the same: {self.stock}!={transaction.stock}"
+            )
+
+        if transaction.buy_or_sell == "C":
+            self.average_price += (
+                self.average_price * self.amount
+                + transaction.price * transaction.amount
+            ) / (self.amount + transaction.parsed_amount)
+            self.amount += transaction.parsed_amount
+            return None
+
+        # if some stock was sold
+        realization_amount = min(self.amount, transaction.amount)
+        self.amount += transaction.parsed_amount
+        return Realization(
+            stock=self.stock,
+            amount=realization_amount,
+            average_price=self.average_price,
+        )

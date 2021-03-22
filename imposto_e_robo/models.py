@@ -76,12 +76,22 @@ class BrokerageReceipt:
 class Realization:
     stock: str
     amount: int
-    average_price: Decimal
+    entry_average_price: Decimal
+    close_price: Decimal
+    is_buy: bool
     #  date: datetime
 
     @property
     def total(self) -> Decimal:
-        return self.amount * self.average_price
+        return self.amount * self.entry_average_price
+
+    @property
+    def net_value(self):
+        value = (self.close_price - self.entry_average_price) * self.amount
+
+        if self.is_buy:
+            return value
+        return -value
 
 
 @dataclass
@@ -97,7 +107,7 @@ class PortfolioEntry:
             )
 
         if transaction.buy_or_sell == "C":
-            self.average_price += (
+            self.average_price = (
                 self.average_price * self.amount
                 + transaction.price * transaction.amount
             ) / (self.amount + transaction.parsed_amount)
@@ -110,5 +120,7 @@ class PortfolioEntry:
         return Realization(
             stock=self.stock,
             amount=realization_amount,
-            average_price=self.average_price,
+            entry_average_price=self.average_price,
+            close_price=transaction.price,
+            is_buy=True,
         )

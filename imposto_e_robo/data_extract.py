@@ -1,16 +1,16 @@
+from datetime import date, datetime
 from decimal import Decimal
-from imposto_e_robo.regex_strings import (
-    RICO_BROKERAGE_RECEIPT_PATTERN_STRING,
-    RICO_PATTERN_STRING,
-)
 import inspect
 import re
-from typing import List, Match, Union
-from pathlib import Path
+from typing import List, Match
 
 import fitz
 
 from imposto_e_robo.models import BrokerageReceipt, Transaction
+from imposto_e_robo.regex_strings import (
+    RICO_BROKERAGE_RECEIPT_PATTERN_STRING,
+    RICO_PATTERN_STRING,
+)
 
 
 RICO_TRANSACTION_PATTERN = re.compile(inspect.cleandoc(RICO_PATTERN_STRING))
@@ -19,13 +19,26 @@ RICO_BROKERAGE_RECEIPT_PATTERN = re.compile(
 )
 
 
+def get_date_from_file(doc: fitz.Document) -> date:
+    """
+    Data pregão
+    26/10/2020
+    """
+    pattern = "Data pregão\n(\d\d/\d\d/\d\d\d\d)"
+    for page in doc:
+        match = re.search(pattern, page.get_text())
+        if match:
+            return datetime.strptime(match.group(1), "%d/%m/%Y").date()
+    raise ValueError(f"Date not found in file {doc}")
+
+
 def brokerage_receipt_from_file(doc: fitz.Document) -> BrokerageReceipt:
     for page in doc:
         match = RICO_BROKERAGE_RECEIPT_PATTERN.search(page.get_text())
 
         if match:
             return parse_brokerage_recipt_match(match)
-    raise ValueError("No brokerage receipt found in file")
+    raise ValueError(f"No brokerage receipt found in file: {doc}")
 
 
 def parse_brokerage_recipt_match(match: re.Match) -> BrokerageReceipt:

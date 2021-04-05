@@ -11,9 +11,9 @@ from collections import defaultdict
 import fitz
 
 from imposto_e_robo.data_extract import (
-    brokerage_receipt_from_file,
-    get_date_from_file,
-    transactions_from_file,
+    brokerage_receipt_from_text,
+    get_date_from_text,
+    transactions_from_text,
 )
 from imposto_e_robo.models import PortfolioEntry, Realization, Transaction
 
@@ -21,17 +21,18 @@ YearMonth = NamedTuple("YearMonth", [("year", int), ("month", int)])
 
 
 if __name__ == "__main__":
-    transactions: List[Transaction] = []
     transactions_by_date: Dict[date, List[Transaction]] = {}
     receipts = []
     for file_path in Path("input/").glob("*.pdf"):
-        doc = fitz.Document(str(file_path))
-        brokerage_date = get_date_from_file(doc)
-        brokerage_transactions = transactions_from_file(doc)
+        for ind, page in enumerate(fitz.Document(str(file_path)), start=1):
+            transactions: List[Transaction] = []
+            text: str = page.get_text()  # type: ignore
+            brokerage_date = get_date_from_text(text)
+            brokerage_transactions = transactions_from_text(text)
 
-        transactions.extend(brokerage_transactions)
-        transactions_by_date[brokerage_date] = transactions
-        #  receipts.append(brokerage_receipt_from_file(doc))
+            transactions.extend(brokerage_transactions)
+            transactions_by_date[brokerage_date] = transactions
+            #  receipts.append(brokerage_receipt_from_text(text))
 
     portfolio: Dict[str, PortfolioEntry] = {}
     realizations_by_month_year: Dict[YearMonth, List[Realization]] = defaultdict(list)
@@ -41,6 +42,9 @@ if __name__ == "__main__":
     )
     for date, transaction_list in transactions_by_date.items():
         for transaction in transaction_list:
+            if transaction.is_daytrade:
+                continue
+
             if transaction.stock not in portfolio:
                 portfolio[transaction.stock] = PortfolioEntry(stock=transaction.stock)
 
@@ -67,14 +71,14 @@ if __name__ == "__main__":
     irf_table = [
         {
             "month_year": f"{month_year.year}/{month_year.month}",
-            "net_value": net_value_by_month_year[month_year],
+            "net_value": realization,
         }
         for month_year, realization in net_value_by_month_year.items()
     ]
 
-    export_dataclass_to_csv(
-        "irf_table.csv", irf_table, headers=["month_year", "net_value"]
-    )
+    #  export_dataclass_to_csv(
+    #      "irf_table.csv", irf_table, headers=["month_year", "net_value"]
+    #  )
     #  __import__("pprint").pprint(transactions)
     #  __import__("pprint").pprint(realizations)
     #

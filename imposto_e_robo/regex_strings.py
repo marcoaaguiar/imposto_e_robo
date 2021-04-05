@@ -1,7 +1,7 @@
 RICO_PATTERN_STRING = r"""(?P<stock_exchange>(?:\w|-)+)
                     (?P<buy_or_sell>C|V)
                     (?P<market>\w+)
-                    (?P<stock>.+)(?P<obs>(\n\w)?)
+                    (?P<stock>.+)(?P<obs>(\n\w*)?)
                     (?P<amount>(?:\d{0,3}\.)*\d{0,3})
                     (?P<price>(?:\d{0,3}\.)*\d{0,3},\d{2})
                     (?P<total>(?:\d{0,3}\.)*\d{0,3},\d{2})

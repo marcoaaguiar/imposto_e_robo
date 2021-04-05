@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from decimal import Decimal
+import decimal
 from typing import Optional
 
 
@@ -23,6 +24,10 @@ class Transaction:
         if self.buy_or_sell == "C":
             return self.amount
         return -self.amount
+
+    @property
+    def is_daytrade(self) -> bool:
+        return "d" in self.obs.lower()
 
 
 @dataclass
@@ -107,10 +112,14 @@ class PortfolioEntry:
             )
 
         if transaction.buy_or_sell == "C":
-            self.average_price = (
-                self.average_price * self.amount
-                + transaction.price * transaction.amount
-            ) / (self.amount + transaction.parsed_amount)
+            try:
+                self.average_price = (
+                    self.average_price * self.amount
+                    + transaction.price * transaction.amount
+                ) / (self.amount + transaction.parsed_amount)
+            except decimal.DivisionByZero:
+                __import__("ipdb").set_trace()
+
             self.amount += transaction.parsed_amount
             return None
 

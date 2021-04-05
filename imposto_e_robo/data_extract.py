@@ -19,26 +19,24 @@ RICO_BROKERAGE_RECEIPT_PATTERN = re.compile(
 )
 
 
-def get_date_from_file(doc: fitz.Document) -> date:
+def get_date_from_text(text: str) -> date:
     """
     Data pregão
     26/10/2020
     """
     pattern = "Data pregão\n(\d\d/\d\d/\d\d\d\d)"
-    for page in doc:
-        match = re.search(pattern, page.get_text())
-        if match:
-            return datetime.strptime(match.group(1), "%d/%m/%Y").date()
+    match = re.search(pattern, text)
+    if match:
+        return datetime.strptime(match.group(1), "%d/%m/%Y").date()
     raise ValueError(f"Date not found in file {doc}")
 
 
-def brokerage_receipt_from_file(doc: fitz.Document) -> BrokerageReceipt:
-    for page in doc:
-        match = RICO_BROKERAGE_RECEIPT_PATTERN.search(page.get_text())
+def brokerage_receipt_from_text(text: str) -> BrokerageReceipt:
+    match = RICO_BROKERAGE_RECEIPT_PATTERN.search(text)
 
-        if match:
-            return parse_brokerage_recipt_match(match)
-    raise ValueError(f"No brokerage receipt found in file: {doc}")
+    if match:
+        return parse_brokerage_recipt_match(match)
+    raise ValueError(f"No brokerage receipt found!")
 
 
 def parse_brokerage_recipt_match(match: re.Match) -> BrokerageReceipt:
@@ -66,13 +64,14 @@ def parse_brokerage_recipt_match(match: re.Match) -> BrokerageReceipt:
     return receipt
 
 
-def transactions_from_file(doc: fitz.Document) -> List[Transaction]:
-    transactions = []
-    for page in doc:
-        for match in RICO_TRANSACTION_PATTERN.finditer(page.get_text()):
-            transactions.append(parse_transaction_match(match))
+def transactions_from_text(text: str) -> List[Transaction]:
+    transactions = [
+        parse_transaction_match(match)
+        for match in RICO_TRANSACTION_PATTERN.finditer(text)
+    ]
 
-    if len(transactions) == 0:
+    if not transactions:
+        __import__("ipdb").set_trace()
         raise ValueError("No transactions found in file")
     # verify emoluments
     return transactions
